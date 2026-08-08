@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from functools import wraps
 
 from flask import (
@@ -33,7 +34,7 @@ def current_user():
     if user_id is None:
         return None
     return get_db().execute(
-        "SELECT id, name, email FROM users WHERE id = ?", (user_id,)
+        "SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,)
     ).fetchone()
 
 
@@ -56,12 +57,40 @@ def inject_user():
 
 
 # ------------------------------------------------------------------ #
+# Formatting helpers                                                  #
+# ------------------------------------------------------------------ #
+
+def format_date(value):
+    """Turn a SQLite timestamp into something like 'August 2026'."""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").strftime("%B %Y")
+    except (TypeError, ValueError):
+        return "—"
+
+
+@app.template_filter("rupees")
+def rupees(value):
+    """Format an amount with thousands separators and no trailing paise."""
+    return f"{value or 0:,.0f}"
+
+
+# ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
 @app.route("/")
 def landing():
     return render_template("landing.html")
+
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -127,7 +156,29 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    return f"Signed in as {current_user()['name']} — profile page coming in Step 4"
+    user = current_user()
+    db = get_db()
+
+    totals = db.execute(
+        """SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
+           FROM expenses WHERE user_id = ?""",
+        (user["id"],),
+    ).fetchone()
+
+    top = db.execute(
+        """SELECT category, SUM(amount) AS total
+           FROM expenses WHERE user_id = ?
+           GROUP BY category ORDER BY total DESC LIMIT 1""",
+        (user["id"],),
+    ).fetchone()
+
+    return render_template(
+        "profile.html",
+        member_since=format_date(user["created_at"]),
+        count=totals["count"],
+        total=totals["total"],
+        top_category=top["category"] if top else None,
+    )
 
 
 # ------------------------------------------------------------------ #

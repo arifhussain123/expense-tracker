@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block content %}
+
+<section class="profile-section">
+    <div class="profile-inner">
+
+        <header class="profile-header">
+            <div class="profile-avatar">{{ user['name'][0]|upper }}</div>
+            <div class="profile-identity">
+                <h1 class="profile-name">{{ user['name'] }}</h1>
+                <p class="profile-email">{{ user['email'] }}</p>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn-ghost">Log out</a>
+        </header>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-label">Total spent</span>
+                <span class="stat-value">₹{{ total|rupees }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Expenses logged</span>
+                <span class="stat-value">{{ count }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Top category</span>
+                <span class="stat-value">{{ top_category or '—' }}</span>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h2 class="profile-card-title">Account details</h2>
+            <dl class="detail-list">
+                <div class="detail-row">
+                    <dt>Full name</dt>
+                    <dd>{{ user['name'] }}</dd>
+                </div>
+                <div class="detail-row">
+                    <dt>Email address</dt>
+                    <dd>{{ user['email'] }}</dd>
+                </div>
+                <div class="detail-row">
+                    <dt>Member since</dt>
+                    <dd>{{ member_since }}</dd>
+                </div>
+                <div class="detail-row">
+                    <dt>Password</dt>
+                    <dd class="detail-muted">••••••••</dd>
+                </div>
+            </dl>
+        </div>
+
+        {% if count == 0 %}
+        <div class="profile-empty">
+            <p>You haven't logged any expenses yet.</p>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary">Add your first expense</a>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}
